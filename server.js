@@ -1,14 +1,29 @@
-require('dotenv').config()
-const express = require('express')
+import { config } from "dotenv";
+config();
+import express from "express";
 const app = express()
-const path = require('path')
-const { logger, logEvents } = require('./middleware/logger')
-const errorHandler = require('./middleware/errorHandler')
-const cookieParser = require('cookie-parser')
-const cors = require('cors')
-const corsOptions = require('./config/corsOptions')
-const connectDB = require('./config/dbConnection')
-const mongoose = require('mongoose')
+import path from "path";
+import {fileURLToPath} from 'url';
+import logger, {  logEvents } from "./middleware/logger.js";
+import errorHandler from "./middleware/errorHandler.js";
+import connectDB from "./config/dbConnection.js";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import corsOptions from "./config/corsOptions.js";
+import mongoose from "mongoose";
+import passport from "passport";
+import bodyParser from "body-parser";
+
+import authRoute from "./routes/auth.js";
+import permissionRoute from "./routes/permissions.js";
+import roleRoute from "./routes/roles.js";
+import rootRoute from "./routes/root.js";
+import userRoute from "./routes/users.js";
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const PORT = process.env.PORT || 8123
 
 connectDB()
@@ -21,10 +36,24 @@ app.use(express.json())
 
 app.use(cookieParser())
 
+// Inisialisasi passport
+// require('./config/passport')(passport);
+import p from "./config/passport.js";
+p(passport);
+app.use(passport.initialize());
+
+// Body parser middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
 app.use('/', express.static(path.join(__dirname, 'public')))
 
-app.use('/', require('./routes/root'))
-app.use('/groups', require('./routes/groupRoutes'))
+app.use('/', rootRoute)
+// // app.use('/groups', require('./routes/groupRoutes'))
+app.use('/auth', authRoute)
+app.use('/users', userRoute)
+app.use('/permission', permissionRoute)
+app.use('/role', roleRoute)
 
 app.all('*', (req, res) => {
     res.status(404)
@@ -45,6 +74,6 @@ mongoose.connection.once('open', () => {
 })
 
 mongoose.connection.on('error', err => {
-    console.log(error)
+    console.log(err)
     logEvents(`${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`, 'mongoErrLog.log')
 })

@@ -5,4 +5,4 @@ const allowedOrigins = [
     'https://www.collad.adwindea.my.id',
 ]
 
-module.exports = allowedOrigins
+export default allowedOrigins
